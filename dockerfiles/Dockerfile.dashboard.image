@@ -1,0 +1,29 @@
+ARG IMAGE_BASE="centos"
+ARG IMAGE_TAG="7"
+ARG VERSION
+
+FROM apache/dashboard-packaged-rpm:${VERSION} AS DASHBOARD
+FROM ${IMAGE_BASE}:${IMAGE_TAG}
+
+# Note: The duplication around the rpm series dockerfile here
+#       is used for reuse the container layer cache
+RUN if [[ $(rpm --eval '%{centos_ver}') == "8" ]]; then \
+        sed -re "s/^#?\s*(mirrorlist)/#\1/g" \
+             -e "s|^#?\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
+             -i /etc/yum.repos.d/CentOS-Linux-*; \
+        dnf install -y centos-release-stream; \
+        dnf swap -y centos-{linux,stream}-repos; \
+        dnf distro-sync -y; \
+    fi
+
+# 拷贝安装包
+COPY --from=DASHBOARD /output /tmp/output
+COPY ./utils/build-image.sh /build-image.sh
+
+# install dashboard
+RUN /build-image.sh install_dashboard
+
+EXPOSE 9000
+
+ENTRYPOINT ["/go/manager-api/manager-api"]
+CMD ["-test.coverprofile=./testdata/integrationcover.out"]

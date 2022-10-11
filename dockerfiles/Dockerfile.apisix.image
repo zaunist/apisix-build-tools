@@ -1,0 +1,34 @@
+ARG IMAGE_BASE="centos"
+ARG IMAGE_TAG="7"
+ARG VERSION
+
+FROM apache/apisix-packaged-rpm:${VERSION} AS APISIX
+FROM ${IMAGE_BASE}:${IMAGE_TAG}
+
+
+
+# Note: The duplication around the rpm series dockerfile here
+#       is used for reuse the container layer cache
+RUN if [[ $(rpm --eval '%{centos_ver}') == "8" ]]; then \
+        sed -re "s/^#?\s*(mirrorlist)/#\1/g" \
+             -e "s|^#?\s*baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" \
+             -i /etc/yum.repos.d/CentOS-Linux-*; \
+        dnf install -y centos-release-stream; \
+        dnf swap -y centos-{linux,stream}-repos; \
+        dnf distro-sync -y; \
+    fi
+
+# 拷贝安装包
+COPY --from=APISIX /output /tmp/output
+COPY ./utils/build-image.sh /build-image.sh
+COPY ./utils/install-common.sh /install-common.sh
+
+# 安装依赖
+RUN /install-common.sh install_apisix_dependencies_rpm
+
+# install apisix
+RUN /build-image.sh install_apisix
+
+EXPOSE 9080
+
+CMD [ "sh", "-c", "/usr/bin/apisix init && /usr/bin/apisix init_etcd && /usr/local/openresty/bin/openresty -p /usr/local/apisix -g 'daemon off;'" ]

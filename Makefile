@@ -98,6 +98,7 @@ endif
 ### function for packing
 ### $(1) is name
 ### $(2) is package type
+### docker system prune -a -f
 define package
 	docker build -t apache/$(1)-packaged-$(2):$(version) \
 		--build-arg VERSION=$(version) \
@@ -110,7 +111,6 @@ define package
 	docker run -d --rm --name output --net="host" apache/$(1)-packaged-$(2):$(version)
 	docker cp output:/output ${PWD}
 	docker stop output
-	docker system prune -a -f
 endef
 
 ### build apisix:
@@ -197,6 +197,16 @@ package-apisix-base-rpm:
 package-apisix-base-deb:
 	$(call package,apisix-base,deb)
 
+### build image for apisix:
+.PHONY: build-apisix-image
+build-apisix-image:
+	$(call build,apisix,apisix,image)
+
+### build image for dashboard:
+.PHONY: build-dashboard-image
+build-dashboard-image:
+	$(call build,apisix,dashboard,image)
+
 ### build fpm for packaging:
 .PHONY: build-fpm
 ifneq ($(buildx), True)
@@ -214,7 +224,7 @@ endif
 ifeq ($(filter $(app),apisix dashboard apisix-base),)
 $(info  the app's value have to be apisix, dashboard or apisix-base!)
 
-else ifeq ($(filter $(type),rpm deb apk),)
+else ifeq ($(filter $(type),rpm deb apk image),)
 $(info  the type's value have to be rpm, deb or apk!)
 
 else ifeq ($(version), 0)
@@ -255,5 +265,17 @@ else ifeq ($(app)_$(type),dashboard_deb)
 package: build-fpm
 package: build-dashboard-deb
 package: package-dashboard-deb
+
+else ifeq ($(app)_$(type),apisix_image)
+package: build-fpm
+package: build-apisix-rpm
+package: package-apisix-rpm
+package: build-apisix-image
+
+else ifeq ($(app)_$(type),dashboard_image)
+package: build-fpm
+package: build-dashboard-rpm
+package: package-dashboard-rpm
+package: build-dashboard-image
 
 endif

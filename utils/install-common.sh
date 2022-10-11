@@ -126,8 +126,8 @@ install_golang() {
     if [[ $ARCH == "arm64" ]] || [[ $ARCH == "aarch64" ]]; then
         GO_ARCH="arm64"
     fi
-    wget https://dl.google.com/go/go1.16.linux-"${GO_ARCH}".tar.gz
-    tar -xzf go1.16.linux-"${GO_ARCH}".tar.gz
+    wget https://dl.google.com/go/go1.19.linux-"${GO_ARCH}".tar.gz
+    tar -xzf go1.19.linux-"${GO_ARCH}".tar.gz
     mv go /usr/local
 }
 
@@ -158,7 +158,7 @@ install_dashboard() {
     export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
     cd "$HOME"
     mkdir gopath
-    go env -w GOPROXY="${goproxy}"
+    go env -w GOPROXY=https://goproxy.cn,direct
     cd /tmp/
     cd /apisix-dashboard
     make build
