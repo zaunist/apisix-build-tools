@@ -205,7 +205,7 @@ build-apisix-image:
 ### build image for dashboard:
 .PHONY: build-dashboard-image
 build-dashboard-image:
-	$(call build,apisix,dashboard,image)
+	$(call build,apisix-dashboard,dashboard,image)
 
 ### build fpm for packaging:
 .PHONY: build-fpm
