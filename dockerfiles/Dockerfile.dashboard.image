@@ -25,5 +25,4 @@ RUN /build-image.sh install_dashboard
 
 EXPOSE 9000
 
-ENTRYPOINT ["/go/manager-api/manager-api"]
-CMD ["-test.coverprofile=./testdata/integrationcover.out"]
+CMD [ "sh","-c","/usr/local/apisix/dashboard/manager-api -c /usr/local/apisix/dashboard/conf/conf.yaml" ]
